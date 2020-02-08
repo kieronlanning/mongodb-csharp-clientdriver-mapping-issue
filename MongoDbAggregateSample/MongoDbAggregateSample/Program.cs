@@ -64,13 +64,13 @@ namespace MongoDbAggregateSample
 			Console.WriteLine($"Result(s) ({count}):");
 			foreach (var result in results)
 			{
-				Console.WriteLine($"> {result.Details.Id}: {result.SomeProperty}: DT: {result.CreatedDateTime == dateTime}: CA: {result.AComplexTypeArray.Length == _childPropertyCount}: SA: {result.AStringArray.Length == _childPropertyCount}".PadLeft(2));
+				Console.WriteLine($"> {result.Details.Id}: {result.SomeProperty}: DT: {result.CreatedDateTime}: CA: {result.AComplexTypeArray.Length == _childPropertyCount}: SA: {result.AStringArray.Length == _childPropertyCount}".PadLeft(2));
 			}
 		}
 
 		static void QueryByDate(IMongoCollection<DataObjectExample> collection, DateTimeOffset dateTime)
 		{
-			var results = collection.AsQueryable().Where(m => m.CreatedDateTime == dateTime);
+			var results = collection.AsQueryable().Where(m => m.CreatedDateTime <= dateTime.AddMonths(5 * 5));
 			var count = results.Count();
 
 			Console.WriteLine($"Result(s) ({count}):");
@@ -86,6 +86,7 @@ namespace MongoDbAggregateSample
 			if (count > 0)
 				return;
 
+			var currentDateTime = dateTime;
 			for (var i = 0; i < 10; i++)
 			{
 				var dataObject = new DataObjectExample {
@@ -93,7 +94,7 @@ namespace MongoDbAggregateSample
 				};
 
 				dataObject.SetSomeProperty(i + 1);
-				dataObject.SetDateTime(dateTime);
+				dataObject.SetDateTime(currentDateTime = currentDateTime.AddMonths(5));
 				for (var m = 0; m < _childPropertyCount; m++)
 				{
 					dataObject.AddComplexType(new SomeComplexType { SoAmI = m + 1, ImAComplexTypeProperty = $"childprofile_{m + 1}_from_dataobject_{i + 1}" });
@@ -112,6 +113,7 @@ namespace MongoDbAggregateSample
 		static void ConfigureClassMap()
 		{
 			//BsonSerializer.RegisterSerializer(new HardcoreSerializer<DataObjectExample>());
+			BsonSerializer.RegisterSerializer(new MongoDB.Bson.Serialization.Serializers.DateTimeOffsetSerializer(MongoDB.Bson.BsonType.String));
 			BsonSerializer.RegisterSerializer(new MakeTheBadManStop<DataObjectExample>());
 		}
 	}

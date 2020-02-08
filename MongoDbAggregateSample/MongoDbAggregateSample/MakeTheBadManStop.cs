@@ -23,14 +23,14 @@ namespace MongoDbAggregateSample
 			var result = BsonExtensionMethods.ToJson(bsonDocument);
 			return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(result, new Newtonsoft.Json.JsonSerializerSettings {
 				ContractResolver = new PrivateSetterContractResolver(),
-				Converters = new List<JsonConverter> { new JsonDateTimeOffsetSerializer() }
+				//Converters = new List<JsonConverter> { new JsonDateTimeOffsetSerializer() }
 			});
 		}
 
 		override public void Serialize(BsonSerializationContext context, BsonSerializationArgs args, T value)
 		{
 			var jsonDocument = Newtonsoft.Json.JsonConvert.SerializeObject(value, new JsonSerializerSettings {
-				Converters = new List<JsonConverter> { new JsonDateTimeOffsetSerializer() }
+				//Converters = new List<JsonConverter> { new JsonDateTimeOffsetSerializer() }
 			});
 			var bsonDocument = BsonSerializer.Deserialize<BsonDocument>(jsonDocument);
 

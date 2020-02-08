@@ -14,6 +14,15 @@ namespace MongoDbAggregateSample
 
 			if (reader.TokenType == JsonToken.StartObject)
 			{
+				// Property name read
+				reader.Skip();
+				
+				// Value read
+				if (!reader.Read())
+					return existingValue;
+
+				reader.ReadAsString();
+
 				//JValue x = new JValue()
 
 				//var dateTimeObject = JToken.Load(reader);
@@ -36,7 +45,7 @@ namespace MongoDbAggregateSample
 
 		override public void WriteJson(JsonWriter writer, [AllowNull] DateTimeOffset value, JsonSerializer serializer)
 		{
-			 writer.WriteStartObject();
+			writer.WriteStartObject();
 			
 			writer.WritePropertyName("DateTime");
 			writer.WriteValue(MongoDB.Bson.BsonUtils.ToMillisecondsSinceEpoch(value.UtcDateTime));
