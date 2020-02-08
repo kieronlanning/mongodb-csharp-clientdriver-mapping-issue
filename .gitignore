@@ -90,3 +90,4 @@ Desktop.ini
 *.sap
 
 # End of https://www.gitignore.io/api/openframeworks+visualstudio
+/MongoDbAggregateSample/MongoDbAggregateSample.v3.ncrunchsolution.user

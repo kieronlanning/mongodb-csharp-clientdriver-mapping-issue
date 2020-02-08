@@ -9,8 +9,12 @@ namespace ExternalNonChangableLibrary
 	public class DataObjectExample : DataObjectRoot
 	{
 		public int SomeProperty { get; private set; }
+		
 		public string[] AStringArray { get; private set; } = new string[0];
+		
 		public SomeComplexType[] AComplexTypeArray { get; private set; } = new SomeComplexType[0];
+
+		public DateTimeOffset CreatedDateTime { get; private set; }
 
 		public void SetSomeProperty(int someProperty)
 		{
@@ -59,6 +63,11 @@ namespace ExternalNonChangableLibrary
 			// ...shortened for example.
 
 			AComplexTypeArray = new SomeComplexType[0];
+		}
+
+		public void SetDateTime(DateTimeOffset dateTime)
+		{
+			CreatedDateTime = dateTime;
 		}
 	}
 }

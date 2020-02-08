@@ -10,7 +10,7 @@ namespace MongoDbAggregateSample
 {
 	static public class Program
 	{
-		static readonly Random _random = new Random();
+		readonly static Random _random = new Random();
 
 		const int _childPropertyCount = 20;
 
@@ -30,42 +30,74 @@ namespace MongoDbAggregateSample
 
 			var client = GetMongoDbClient();
 			var database = client.GetDatabase("aggregate-demo");
+
+			try
+			{
+				await database.DropCollectionAsync("data-object-example");
+			}
+			catch { }
+
 			var collection = database.GetCollection<DataObjectExample>("data-object-example");
 
-			await PopulateAsync(collection);
+			var rndDateTime = new DateTimeOffset(_random.Next(0, int.MaxValue), TimeSpan.Zero);
 
-			Query(collection);
+			Console.WriteLine("> Populating...");
+
+			await PopulateAsync(collection, rndDateTime);
+
+			Console.WriteLine("> Querying...");
+
+			Query(collection, rndDateTime);
+
+			Console.WriteLine("> Querying by date...");
+
+			QueryByDate(collection, rndDateTime);
+
+			Console.ReadLine();
 		}
 
-		static void Query(IMongoCollection<DataObjectExample> collection)
+		static void Query(IMongoCollection<DataObjectExample> collection, DateTimeOffset dateTime)
 		{
 			var results = collection.AsQueryable().Where(m => m.SomeProperty >= 5 && m.SomeProperty <= 10);
 			var count = results.Count();
 
 			Console.WriteLine($"Result(s) ({count}):");
-			foreach(var result in results)
+			foreach (var result in results)
 			{
-				Console.WriteLine($"> {result.Details.Id}: {result.SomeProperty}: {result.AComplexTypeArray.Length == _childPropertyCount}: { result.AStringArray.Length == _childPropertyCount}".PadLeft(2));
+				Console.WriteLine($"> {result.Details.Id}: {result.SomeProperty}: DT: {result.CreatedDateTime == dateTime}: CA: {result.AComplexTypeArray.Length == _childPropertyCount}: SA: {result.AStringArray.Length == _childPropertyCount}".PadLeft(2));
 			}
 		}
 
-		async static Task PopulateAsync(IMongoCollection<DataObjectExample> collection, CancellationToken cancellationToken = default)
+		static void QueryByDate(IMongoCollection<DataObjectExample> collection, DateTimeOffset dateTime)
 		{
-			var count = await collection.EstimatedDocumentCountAsync();
+			var results = collection.AsQueryable().Where(m => m.CreatedDateTime == dateTime);
+			var count = results.Count();
+
+			Console.WriteLine($"Result(s) ({count}):");
+			foreach (var result in results)
+			{
+				Console.WriteLine($"> {result.Details.Id}: {result.SomeProperty}: DT: {result.CreatedDateTime == dateTime}: CA: {result.AComplexTypeArray.Length == _childPropertyCount}: SA: {result.AStringArray.Length == _childPropertyCount}".PadLeft(2));
+			}
+		}
+
+		async static Task PopulateAsync(IMongoCollection<DataObjectExample> collection, DateTimeOffset dateTime, CancellationToken cancellationToken = default)
+		{
+			var count = await collection.EstimatedDocumentCountAsync(cancellationToken: cancellationToken);
 			if (count > 0)
 				return;
 
 			for (var i = 0; i < 10; i++)
 			{
-				var dataObject = new DataObjectExample
-				{
+				var dataObject = new DataObjectExample {
 					Details = new DataObjectInfo { Id = $"dataobject_{i + 1}" }
 				};
 
 				dataObject.SetSomeProperty(i + 1);
-				for (var m = 0; m < _childPropertyCount; m++) {
+				dataObject.SetDateTime(dateTime);
+				for (var m = 0; m < _childPropertyCount; m++)
+				{
 					dataObject.AddComplexType(new SomeComplexType { SoAmI = m + 1, ImAComplexTypeProperty = $"childprofile_{m + 1}_from_dataobject_{i + 1}" });
-					dataObject.AddString(_random.Next().ToString());
+					dataObject.AddString($"{_random.Next()}");
 				};
 
 				await collection.InsertOneAsync(dataObject, new InsertOneOptions(), cancellationToken);
@@ -79,11 +111,8 @@ namespace MongoDbAggregateSample
 
 		static void ConfigureClassMap()
 		{
-			var t = typeof(DataObjectExample);
-
-			var classMap = new BsonClassMap(t);
-			classMap.AutoMap();
-			classMap.SetIdMember(new BsonMemberMap(classMap, t.GetProperty("Details").PropertyType.GetProperty("Id")));
+			//BsonSerializer.RegisterSerializer(new HardcoreSerializer<DataObjectExample>());
+			BsonSerializer.RegisterSerializer(new MakeTheBadManStop<DataObjectExample>());
 		}
 	}
 }
