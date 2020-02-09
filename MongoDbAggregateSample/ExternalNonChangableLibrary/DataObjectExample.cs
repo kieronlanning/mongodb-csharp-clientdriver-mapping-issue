@@ -16,11 +16,20 @@ namespace ExternalNonChangableLibrary
 
 		public DateTimeOffset CreatedDateTime { get; private set; }
 
+		public ASuperComplexTypeProperty AComplexTypeProperty { get; private set; }
+
 		public void SetSomeProperty(int someProperty)
 		{
 			// ...shortened for example.
 
 			SomeProperty = someProperty;
+		}
+
+		public void SetAComplexTypeProperty(ASuperComplexTypeProperty someComplexType)
+		{
+			// ...shortened for example.
+
+			AComplexTypeProperty = someComplexType;
 		}
 
 		public void AddString(string item)

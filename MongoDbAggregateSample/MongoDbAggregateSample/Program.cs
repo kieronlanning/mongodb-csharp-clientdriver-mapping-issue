@@ -38,7 +38,6 @@ namespace MongoDbAggregateSample
 			catch { }
 
 			var collection = database.GetCollection<DataObjectExample>("data-object-example");
-
 			var rndDateTime = new DateTimeOffset(_random.Next(0, int.MaxValue), TimeSpan.Zero);
 
 			Console.WriteLine("> Populating...");
@@ -53,12 +52,28 @@ namespace MongoDbAggregateSample
 
 			QueryByDate(collection, rndDateTime);
 
+			Console.WriteLine("> Querying by complex object...");
+
+			QueryByComplexObject(collection);
+
 			Console.ReadLine();
 		}
 
 		static void Query(IMongoCollection<DataObjectExample> collection, DateTimeOffset dateTime)
 		{
 			var results = collection.AsQueryable().Where(m => m.SomeProperty >= 5 && m.SomeProperty <= 10);
+			var count = results.Count();
+
+			Console.WriteLine($"Result(s) ({count}):");
+			foreach (var result in results)
+			{
+				Console.WriteLine($"> {result.Details.Id}: {result.AComplexTypeProperty}");
+			}
+		}
+
+		static void QueryByComplexObject(IMongoCollection<DataObjectExample> collection)
+		{
+			var results = collection.AsQueryable().Where(m => m.AComplexTypeProperty.ZOMG.SoAmI == 55);
 			var count = results.Count();
 
 			Console.WriteLine($"Result(s) ({count}):");
@@ -95,6 +110,14 @@ namespace MongoDbAggregateSample
 
 				dataObject.SetSomeProperty(i + 1);
 				dataObject.SetDateTime(currentDateTime = currentDateTime.AddMonths(5));
+				dataObject.SetAComplexTypeProperty(new ASuperComplexTypeProperty {
+					HugelyComplex = i + 1,
+					MegaComplex = "wow",
+					ZOMG = new SomeComplexType {
+						ImAComplexTypeProperty = "you're deep in here",
+						SoAmI = 55
+					}
+				});
 				for (var m = 0; m < _childPropertyCount; m++)
 				{
 					dataObject.AddComplexType(new SomeComplexType { SoAmI = m + 1, ImAComplexTypeProperty = $"childprofile_{m + 1}_from_dataobject_{i + 1}" });

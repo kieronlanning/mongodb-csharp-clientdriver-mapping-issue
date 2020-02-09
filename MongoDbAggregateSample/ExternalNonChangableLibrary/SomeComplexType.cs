@@ -26,5 +26,10 @@ namespace ExternalNonChangableLibrary
 			return SoAmI
 				^ ImAComplexTypeProperty?.GetHashCode() ?? 0;
 		}
+
+		override public string ToString()
+		{
+			return $"{nameof(ImAComplexTypeProperty)}: {ImAComplexTypeProperty}, {nameof(SoAmI)}: {SoAmI}";
+		}
 	}
 }
