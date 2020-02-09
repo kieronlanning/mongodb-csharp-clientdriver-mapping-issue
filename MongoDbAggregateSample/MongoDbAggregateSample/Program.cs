@@ -2,6 +2,7 @@
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,7 +43,7 @@ namespace MongoDbAggregateSample
 
 			Console.WriteLine("> Populating...");
 
-			await PopulateAsync(collection, rndDateTime);
+			var ids = await PopulateAsync(collection, rndDateTime);
 
 			Console.WriteLine("> Querying...");
 
@@ -55,6 +56,10 @@ namespace MongoDbAggregateSample
 			Console.WriteLine("> Querying by complex object...");
 
 			QueryByComplexObject(collection);
+
+			Console.WriteLine("> Querying by Id on Details complex object...");
+
+			QueryByDetailsComplexObject(collection, ids);
 
 			Console.ReadLine();
 		}
@@ -69,6 +74,23 @@ namespace MongoDbAggregateSample
 			{
 				Console.WriteLine($"> {result.Details.Id}: {result.AComplexTypeProperty}");
 			}
+		}
+
+		static void QueryByDetailsComplexObject(IMongoCollection<DataObjectExample> collection, string[] ids)
+		{
+			var results = collection.AsQueryable().Where(m => m.Details.Version > 0);
+			var count = results.Count();
+
+			Console.WriteLine($"\t Found {count} result(s) where Details.Version > 0.");
+
+			count = 0;			
+			foreach(var id in ids)
+			{
+				results = collection.AsQueryable().Where(m => m.Details.Id == id);
+				count += results.Count();
+			}
+
+			Console.WriteLine($"\t Found {count} result(s) when search by Details.Id.");
 		}
 
 		static void QueryByComplexObject(IMongoCollection<DataObjectExample> collection)
@@ -95,17 +117,21 @@ namespace MongoDbAggregateSample
 			}
 		}
 
-		async static Task PopulateAsync(IMongoCollection<DataObjectExample> collection, DateTimeOffset dateTime, CancellationToken cancellationToken = default)
+		async static Task<string[]> PopulateAsync(IMongoCollection<DataObjectExample> collection, DateTimeOffset dateTime, CancellationToken cancellationToken = default)
 		{
 			var count = await collection.EstimatedDocumentCountAsync(cancellationToken: cancellationToken);
 			if (count > 0)
-				return;
+				return Array.Empty<string>();
 
+			var list = new List<string>();
 			var currentDateTime = dateTime;
+
 			for (var i = 0; i < 10; i++)
 			{
+				var id = $"dataobject_{i + 1}";
+				list.Add(id);
 				var dataObject = new DataObjectExample {
-					Details = new DataObjectInfo { Id = $"dataobject_{i + 1}" }
+					Details = new DataObjectInfo { Id = id }
 				};
 
 				dataObject.SetSomeProperty(i + 1);
@@ -126,6 +152,8 @@ namespace MongoDbAggregateSample
 
 				await collection.InsertOneAsync(dataObject, new InsertOneOptions(), cancellationToken);
 			}
+
+			return list.ToArray();
 		}
 
 		static IMongoClient GetMongoDbClient()
